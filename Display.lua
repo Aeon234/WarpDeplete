@@ -553,12 +553,25 @@ end
 
 -- Expects direct forces value
 function WarpDeplete:SetForcesCurrent(currentCount)
-  if self.forcesState.currentCount < self.forcesState.totalCount and
-    currentCount >= self.forcesState.totalCount
-  then
-    self.forcesState.completed = true
-    self.forcesState.completedTime = self.timerState.current
+
+if self.forcesState.currentCount < self.forcesState.totalCount and
+currentCount >= self.forcesState.totalCount
+then
+  self.forcesState.completed = true
+  self.forcesState.completedTime = self.timerState.current
+end
+
+ -- Since we only ever expect the completion status to go from completed to back to in progress, we'll contain demo specific changes to this demo block.
+if self.challengeState.demoModeActive then
+  self.forcesState.currentCount = currentCount
+  self.forcesState.currentPercent = self.forcesState.currentCount / 100 or 0
+  -- Revert completion status of forces if show forces percent above 100% is unchecked.
+  if self.forcesState.currentCount < self.forcesState.totalCount then
+    self.forcesState.completed = false
+    self.forcesState.completedTime = nil
   end
+  return
+end
 
   -- The current count can only ever go up. The only place where it should
   -- ever decrease is when it's reset in ResetState.
