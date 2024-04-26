@@ -208,6 +208,8 @@ function WarpDeplete:UpdateForces()
   if not currentCount then return end
   self:PrintDebug("currentCount: " .. currentCount)
 
+  self.forcesState.startExtra = false
+
   -- currentCount never goes above totalCount - so it doesn't matter to continue function
   -- check if we've reached that point
   if self.forcesState.completed then self:PrintDebug("We've already reached total force count required") return end
@@ -218,6 +220,7 @@ function WarpDeplete:UpdateForces()
       -- If we just went above the total count (or matched it), we completed it just now
       self.forcesState.completed = true
       self.forcesState.completedTime = self.timerState.current
+      self.forcesState.startExtra = true
       return
     end
     self:SetForcesCurrent(currentCount)
@@ -229,7 +232,7 @@ end
 
 function WarpDeplete:SetForcesExtra(guid)
 
-  -- print to maker sure this guid matches the print here:
+  -- print to make sure this guid matches the print here:
   -- self:PrintDebug("removing unit " .. guid .. " from current pull")
   self:PrintDebug("guid: " .. guid)
 
@@ -250,7 +253,7 @@ function WarpDeplete:SetForcesExtra(guid)
     self:PrintDebug("New total force: " .. (self.forcesState.currentCount + self.forcesState.extraCount))
     -- trigger update
     self:SetForcesCurrent(self.forcesState.currentCount)
-  elseif self.forcesState.currentCount + guidForceCount >= self.forcesState.totalCount and not self.forcesState.countingExtra then
+  elseif self.forcesState.currentCount + guidForceCount >= self.forcesState.totalCount and self.forcesState.startExtra and not self.forcesState.countingExtra then
     self.forcesState.countingExtra = true
     local rest = self.forcesState.totalCount - self.forcesState.currentCount
     self.forcesState.extraCount = guidForceCount - rest
@@ -260,6 +263,7 @@ function WarpDeplete:SetForcesExtra(guid)
     -- trigger update
     self:SetForcesCurrent(self.forcesState.currentCount)
   end
+  self.forcesState.startExtra = true
 end
 
 function WarpDeplete:UpdateObjectives()

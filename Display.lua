@@ -536,6 +536,7 @@ function WarpDeplete:SetForcesTotal(totalCount)
 
   self.forcesState.completed = false
   self.forcesState.countingExtra = false
+  self.forcesState.startExtra = false
   self.forcesState.extraCount = 0
   self.forcesState.completedTime = 0
 
