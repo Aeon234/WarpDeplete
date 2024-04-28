@@ -208,6 +208,9 @@ function WarpDeplete:UpdateForces()
   if not currentCount then return end
   self:PrintDebug("currentCount: " .. currentCount)
 
+  -- update function order number
+  self.forcesState.functionRunNumber = self.forcesState.functionRunNumber + 1
+
   self.forcesState.startExtra = false
 
   -- currentCount never goes above totalCount - so it doesn't matter to continue function
@@ -232,6 +235,9 @@ end
 
 function WarpDeplete:SetForcesExtra(guid)
 
+  -- update function order number
+  self.forcesState.functionRunNumber = self.forcesState.functionRunNumber + 1
+
   -- print to make sure this guid matches the print here:
   -- self:PrintDebug("removing unit " .. guid .. " from current pull")
   self:PrintDebug("guid: " .. guid)
@@ -245,6 +251,10 @@ function WarpDeplete:SetForcesExtra(guid)
 
   self:PrintDebug("guidForceCount: " .. guidForceCount)
   self:PrintDebug("currentCount: " .. self.forcesState.currentCount)
+
+  if self.forcesState.functionRunNumber % 3 == 1 then
+    self.forcesState.startExtra = true
+  end
 
   -- only add in the force after we hit 100% force count
   if self.forcesState.countingExtra then
