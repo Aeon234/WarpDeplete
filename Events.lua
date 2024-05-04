@@ -210,6 +210,8 @@ function WarpDeplete:UpdateForces()
 
   -- update function order number
   self.forcesState.functionRunNumber = self.forcesState.functionRunNumber + 1
+  self:PrintDebug("functionRunNumber: " .. self.forcesState.functionRunNumber)
+  self:PrintDebug("functionRunNumber mod 3: " .. (self.forcesState.functionRunNumber % 3))
 
   self.forcesState.startExtra = false
 
@@ -237,6 +239,7 @@ function WarpDeplete:SetForcesExtra(guid)
 
   -- update function order number
   self.forcesState.functionRunNumber = self.forcesState.functionRunNumber + 1
+  self:PrintDebug("functionRunNumber: " .. self.forcesState.functionRunNumber)
 
   -- print to make sure this guid matches the print here:
   -- self:PrintDebug("removing unit " .. guid .. " from current pull")
@@ -252,6 +255,7 @@ function WarpDeplete:SetForcesExtra(guid)
   self:PrintDebug("guidForceCount: " .. guidForceCount)
   self:PrintDebug("currentCount: " .. self.forcesState.currentCount)
 
+  self:PrintDebug("functionRunNumber mod 3: " .. (self.forcesState.functionRunNumber % 3))
   if self.forcesState.functionRunNumber % 3 == 1 then
     self.forcesState.startExtra = true
   end

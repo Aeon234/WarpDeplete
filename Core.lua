@@ -43,7 +43,7 @@ WarpDeplete.defaultForcesState = {
   functionRunNumber = 0,
   -- boolean to track if we've hit 100% and to start adding to extraCount
   countingExtra = false,
-  -- boolean to keep prevent false positive counts
+  -- boolean to prevent false positives
   startExtra = false,
 
   pullPercent = 0,
