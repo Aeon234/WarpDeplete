@@ -31,6 +31,9 @@ WarpDeplete.defaultForcesState = {
 
   -- needed to check proper force count if mob that just died would make self.forcesState.completed be marked true
   extraCount = 0,
+
+  -- note: +3 mob died but not acutally worth +3, think of potetnial solution
+
   -- when a mob dies, OnScenarioPOIUpdate, OnScenarioCriteriaUpdate, and OnCombatLogEvent run 
   -- but in a random, unspecified order
   -- functionRunNumber is used to keep track of what order SetForcesExtra is 

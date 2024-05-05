@@ -237,6 +237,10 @@ end
 
 function WarpDeplete:SetForcesExtra(guid)
 
+
+  -- test delay to see if functions are ran in parallel or sequentially
+  C_timer.After(1, SetForcesExtra(guid))
+
   -- update function order number
   self.forcesState.functionRunNumber = self.forcesState.functionRunNumber + 1
   self:PrintDebug("functionRunNumber: " .. self.forcesState.functionRunNumber)
@@ -613,7 +617,8 @@ function WarpDeplete:OnCombatLogEvent(ev)
     return
   end
 
-  if not self.forcesState.currentPull[guid] then return end
+  -- test to see if this print only happens when it's a boss death
+  if not self.forcesState.currentPull[guid] then self:PrintDebug("boss death test") return end
   self:PrintDebug("removing unit " .. guid .. " from current pull")
   -- See comment above (OnThreadListUpdate)
 
