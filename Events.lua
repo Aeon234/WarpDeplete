@@ -256,7 +256,7 @@ function WarpDeplete:SetForcesExtra(guid)
   self:PrintDebug("currentCount: " .. self.forcesState.currentCount)
 
   self:PrintDebug("functionRunNumber mod 3: " .. (self.forcesState.functionRunNumber % 3))
-  if self.forcesState.functionRunNumber % 3 == 0 then
+  if self.forcesState.functionRunNumber % 3 == 1 then
     self.forcesState.startExtra = true
   end
 
