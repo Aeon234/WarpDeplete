@@ -199,8 +199,18 @@ function WarpDeplete:GetEnemyForcesCount()
   return currentCount, totalCount
 end
 
-function WarpDeplete:UpdateForces()
+function WarpDeplete:UpdateForces(force)
   if not self.challengeState.inChallenge then return end
+
+  self.PrintDebug("force: " .. force)
+  self.PrintDebug("CombatLogFunction: " .. tostring(self.forcesState.CombatLogFunction))
+
+  if self.forcesState.currentCount + force >= self.forcesState.totalCount then
+    self:PrintDebug(">=100%")
+    local rest = self.forcesState.totalCount - self.forcesState.currentCount
+    self.forcesState.extraCount = force - rest
+    self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
+  end
 
   local stepCount = select(3, C_Scenario.GetStepInfo())
   local currentCount = self:GetEnemyForcesCount()
@@ -208,80 +218,27 @@ function WarpDeplete:UpdateForces()
   if not currentCount then return end
   self:PrintDebug("currentCount: " .. currentCount)
 
-  -- update function order number
-  self.forcesState.functionRunNumber = self.forcesState.functionRunNumber + 1
-  self:PrintDebug("functionRunNumber: " .. self.forcesState.functionRunNumber)
-  self:PrintDebug("functionRunNumber mod 3: " .. (self.forcesState.functionRunNumber % 3))
-
-  self.forcesState.startExtra = false
-
   -- currentCount never goes above totalCount - so it doesn't matter to continue function
   -- check if we've reached that point
-  if self.forcesState.completed then self:PrintDebug("We've already reached total force count required") return end
+  if self.forcesState.completed then 
+    self.forcesState.extraCount = self.forcesState.extraCount + force
+    return 
+  end
 
   -- only go down this path if the unclampForcesPercent is checked true
-  if self.db.profile.unclampForcesPercent then
+  if self.db.profile.unclampForcesPercent and MDT then
     if currentCount >= self.forcesState.totalCount and not self.forcesState.completed then
       -- If we just went above the total count (or matched it), we completed it just now
       self.forcesState.completed = true
       self.forcesState.completedTime = self.timerState.current
-      self.forcesState.startExtra = true
-      return
+      self:PrintDebug(">=100%")
     end
-    self:SetForcesCurrent(currentCount)
+    if self.forcesState.CombatLogFunction then self:SetForcesCurrent(currentCount) end
+    return
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
     self:SetForcesCurrent(currentCount)
   end
-end
-
-function WarpDeplete:SetForcesExtra(guid)
-
-
-  -- test delay to see if functions are ran in parallel or sequentially
-  C_timer.After(1, SetForcesExtra(guid))
-
-  -- update function order number
-  self.forcesState.functionRunNumber = self.forcesState.functionRunNumber + 1
-  self:PrintDebug("functionRunNumber: " .. self.forcesState.functionRunNumber)
-
-  -- print to make sure this guid matches the print here:
-  -- self:PrintDebug("removing unit " .. guid .. " from current pull")
-  self:PrintDebug("guid: " .. guid)
-
-  -- get the force amount for mob that just died
-  local npcID = select(6, strsplit("-", guid))
-  local guidForceCount = MDT:GetEnemyForces(tonumber(npcID)) 
-
-  -- we don't care for entities that have NIL force count - just in case it slips through
-  if guidForceCount == nil then return end
-
-  self:PrintDebug("guidForceCount: " .. guidForceCount)
-  self:PrintDebug("currentCount: " .. self.forcesState.currentCount)
-
-  self:PrintDebug("functionRunNumber mod 3: " .. (self.forcesState.functionRunNumber % 3))
-  if self.forcesState.functionRunNumber % 3 == 1 then
-    self.forcesState.startExtra = true
-  end
-
-  -- only add in the force after we hit 100% force count
-  if self.forcesState.countingExtra then
-    self.forcesState.extraCount = self.forcesState.extraCount + guidForceCount
-    self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
-    self:PrintDebug("New total force: " .. (self.forcesState.currentCount + self.forcesState.extraCount))
-    -- trigger update
-    self:SetForcesCurrent(self.forcesState.currentCount)
-  elseif self.forcesState.currentCount + guidForceCount >= self.forcesState.totalCount and self.forcesState.startExtra and not self.forcesState.countingExtra then
-    self.forcesState.countingExtra = true
-    local rest = self.forcesState.totalCount - self.forcesState.currentCount
-    self.forcesState.extraCount = guidForceCount - rest
-    self.forcesState.currentCount = self.forcesState.totalCount
-    self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
-    self:PrintDebug("New total force: " .. (self.forcesState.currentCount + self.forcesState.extraCount))
-    -- trigger update
-    self:SetForcesCurrent(self.forcesState.currentCount)
-  end
-  self.forcesState.startExtra = true
 end
 
 function WarpDeplete:UpdateObjectives()
@@ -563,13 +520,13 @@ end
 
 function WarpDeplete:OnScenarioPOIUpdate(ev)
   self:PrintDebugEvent(ev)
-  self:UpdateForces()
+  self:UpdateForces(0)
   self:UpdateObjectives()
 end
 
 function WarpDeplete:OnScenarioCriteriaUpdate(ev)
   self:PrintDebugEvent(ev)
-  self:UpdateForces()
+  self:UpdateForces(0)
   self:UpdateObjectives()
 end
 
@@ -617,14 +574,19 @@ function WarpDeplete:OnCombatLogEvent(ev)
     return
   end
 
-  -- test to see if this print only happens when it's a boss death
-  if not self.forcesState.currentPull[guid] then self:PrintDebug("boss death test") return end
+  if not self.forcesState.currentPull[guid] then return end
   self:PrintDebug("removing unit " .. guid .. " from current pull")
   -- See comment above (OnThreadListUpdate)
 
   -- count extras - requires MDT to be enabled as well
   if self.db.profile.unclampForcesPercent and MDT then
-    self:SetForcesExtra(guid)
+    self.forcesState.CombatLogFunction = true
+    -- get the force amount for mob that just died
+    local npcID = select(6, strsplit("-", guid))
+    local guidForceCount = MDT:GetEnemyForces(tonumber(npcID)) 
+    self:PrintDebug("Mob died worth: " .. guidForceCount)
+    self:UpdateForces(guidForceCount)
+    self.forcesState.CombatLogFunction = false
   end
 
   self.forcesState.currentPull[guid] = "DEAD"
