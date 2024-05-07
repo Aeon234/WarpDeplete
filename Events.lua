@@ -222,6 +222,7 @@ function WarpDeplete:UpdateForces(force)
   -- check if we've reached that point
   if self.forcesState.completed then 
     self.forcesState.extraCount = self.forcesState.extraCount + force
+    self:SetForcesCurrent(currentCount)
     return 
   end
 
