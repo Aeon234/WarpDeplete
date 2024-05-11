@@ -205,10 +205,10 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   self:PrintDebug("forceCount: " .. forceCount)
   self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
 
-  if self.forcesState.currentCount + force >= self.forcesState.totalCount then
+  if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount then
     self:PrintDebug(">=100%")
     local rest = self.forcesState.totalCount - self.forcesState.currentCount
-    self.forcesState.extraCount = force - rest
+    self.forcesState.extraCount = forceCount - rest
     self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
   end
 
