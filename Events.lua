@@ -199,11 +199,14 @@ function WarpDeplete:GetEnemyForcesCount()
   return currentCount, totalCount
 end
 
-function WarpDeplete:UpdateForces(force)
+function WarpDeplete:UpdateForces(forceCount, updateCount)
   if not self.challengeState.inChallenge then return end
 
-  self.PrintDebug("force: " .. force)
-  self.PrintDebug("CombatLogFunction: " .. tostring(self.forcesState.CombatLogFunction))
+  local guidForceCount = forceCount
+  local fromCombatLog = updateCount
+
+  self.PrintDebug("guidForceCount: " .. guidForceCount)
+  self.printDebug("fromCombatLog: " .. tostring(fromCombatLog))
 
   if self.forcesState.currentCount + force >= self.forcesState.totalCount then
     self:PrintDebug(">=100%")
@@ -221,7 +224,7 @@ function WarpDeplete:UpdateForces(force)
   -- currentCount never goes above totalCount - so it doesn't matter to continue function
   -- check if we've reached that point
   if self.forcesState.completed then 
-    self.forcesState.extraCount = self.forcesState.extraCount + force
+    self.forcesState.extraCount = self.forcesState.extraCount + guidForceCount
     self:SetForcesCurrent(currentCount)
     return 
   end
@@ -234,7 +237,7 @@ function WarpDeplete:UpdateForces(force)
       self.forcesState.completedTime = self.timerState.current
       self:PrintDebug(">=100%")
     end
-    if self.forcesState.CombatLogFunction then self:SetForcesCurrent(currentCount) end
+    if fromCombatLog then self:SetForcesCurrent(currentCount) end
     return
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
@@ -521,13 +524,13 @@ end
 
 function WarpDeplete:OnScenarioPOIUpdate(ev)
   self:PrintDebugEvent(ev)
-  self:UpdateForces(0)
+  self:UpdateForces(0, false)
   self:UpdateObjectives()
 end
 
 function WarpDeplete:OnScenarioCriteriaUpdate(ev)
   self:PrintDebugEvent(ev)
-  self:UpdateForces(0)
+  self:UpdateForces(0, false)
   self:UpdateObjectives()
 end
 
@@ -581,13 +584,11 @@ function WarpDeplete:OnCombatLogEvent(ev)
 
   -- count extras - requires MDT to be enabled as well
   if self.db.profile.unclampForcesPercent and MDT then
-    self.forcesState.CombatLogFunction = true
     -- get the force amount for mob that just died
     local npcID = select(6, strsplit("-", guid))
     local guidForceCount = MDT:GetEnemyForces(tonumber(npcID)) 
     self:PrintDebug("Mob died worth: " .. guidForceCount)
-    self:UpdateForces(guidForceCount)
-    self.forcesState.CombatLogFunction = false
+    self:UpdateForces(guidForceCount, true)
   end
 
   self.forcesState.currentPull[guid] = "DEAD"
