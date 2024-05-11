@@ -203,7 +203,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   if not self.challengeState.inChallenge then return end
 
   self:PrintDebug("forceCount: " .. forceCount)
-  self:printDebug("fromCombatLog: " .. tostring(fromCombatLog))
+  self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
 
   if self.forcesState.currentCount + force >= self.forcesState.totalCount then
     self:PrintDebug(">=100%")
