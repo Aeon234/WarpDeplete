@@ -199,14 +199,11 @@ function WarpDeplete:GetEnemyForcesCount()
   return currentCount, totalCount
 end
 
-function WarpDeplete:UpdateForces(forceCount, updateCount)
+function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   if not self.challengeState.inChallenge then return end
 
-  local guidForceCount = forceCount
-  local fromCombatLog = updateCount
-
-  self.PrintDebug("guidForceCount: " .. guidForceCount)
-  self.printDebug("fromCombatLog: " .. tostring(fromCombatLog))
+  self:PrintDebug("forceCount: " .. forceCount)
+  self:printDebug("fromCombatLog: " .. tostring(fromCombatLog))
 
   if self.forcesState.currentCount + force >= self.forcesState.totalCount then
     self:PrintDebug(">=100%")
@@ -224,7 +221,7 @@ function WarpDeplete:UpdateForces(forceCount, updateCount)
   -- currentCount never goes above totalCount - so it doesn't matter to continue function
   -- check if we've reached that point
   if self.forcesState.completed then 
-    self.forcesState.extraCount = self.forcesState.extraCount + guidForceCount
+    self.forcesState.extraCount = self.forcesState.extraCount + forceCount
     self:SetForcesCurrent(currentCount)
     return 
   end
