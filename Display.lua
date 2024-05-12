@@ -535,7 +535,6 @@ function WarpDeplete:SetForcesTotal(totalCount)
   self.forcesState.currentPercent = currentPercent
 
   self.forcesState.completed = false
-  self.forcesState.extraCount = 0
   self.forcesState.completedTime = 0
 
   self:UpdateForcesDisplay()

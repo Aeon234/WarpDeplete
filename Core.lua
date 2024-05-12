@@ -27,10 +27,8 @@ WarpDeplete.defaultChallengeState = {
 WarpDeplete.defaultForcesState = {
   pullCount = 0,
   currentCount = 0,
-  totalCount = 100,
-
-  -- needed to check proper force count if mob that just died would make self.forcesState.completed be marked true
   extraCount = 0,
+  totalCount = 100,
 
   pullPercent = 0,
   currentPercent = 0,

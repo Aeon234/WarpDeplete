@@ -211,7 +211,9 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   self:PrintDebug("forceCount: " .. forceCount)
   self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
 
-  -- only go down this path if the unclampForcesPercent is checked true
+  -- Only go down this path if the unclampForcesPercent is checked true
+  -- have to include the MDT check or else it won't go above 0
+  -- if a user has unclmapForcesPresent enabled, but no MDT
   if self.db.profile.unclampForcesPercent and MDT then
 
     -- Once we're completed, we can start doing just focusing on extraCount
@@ -222,6 +224,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
     end
 
     -- Need to check self.forcesState.currentCount prior to it being updated in SetForcesCurrent()
+    -- to prevent false triggers and double adding forceCount
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount then
       -- If we just went above the total count (or matched it), we completed it just now
       self:PrintDebug("just hit >= 100%")
@@ -234,8 +237,20 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
-    -- we want to make sure fromCombatLog is what triggers the update to not cause any false additions
-    if fromCombatLog then self:SetForcesCurrent(currentCount) end
+    -- When a mob worth force dies, 3 functions run in a random order:
+    -- 1. OnScenarioPOIUpdate
+    -- 2. OnScenarioCriteraUpdate
+    -- 3. OnCombatLogEvent
+    -- We want to make sure OnCombatLogEvent is what triggers SetForcesCurrent().
+    -- If this check isn't here and if OnScenarioPOIUpdate or OnScenarioCriteraUpdate 
+    -- run before OnCombatLogEvent and makes self.forcesState.currentCount be updated before a 
+    -- proper check can happen with self.forcesState.currentCount + forceCount,
+    -- the mob that would push us over 100% would be double counted and produce
+    -- an inaccurate count.
+    if fromCombatLog then 
+      self:PrintDebug("Running SetForcesCurrent(currentCount)")
+      self:SetForcesCurrent(currentCount) 
+    end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
 
@@ -586,7 +601,7 @@ function WarpDeplete:OnCombatLogEvent(ev)
   self:PrintDebug("removing unit " .. guid .. " from current pull")
   -- See comment above (OnThreadListUpdate)
 
-  -- count extras - requires MDT to be enabled as well
+  -- count extras - requires MDT to be enabled as well to get the guidForceCount
   if self.db.profile.unclampForcesPercent and MDT then
     -- get the force amount for mob that just died
     local npcID = select(6, strsplit("-", guid))

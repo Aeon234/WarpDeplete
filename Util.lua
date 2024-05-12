@@ -32,7 +32,7 @@ function Util.formatForcesText(
     local pullPercentText = ("%.2f"):format(pullPercent)
     local pullCountText = ("%d"):format(pullCount)
 
-    local countAfterPull = currentCount + pullCount
+    local countAfterPull = (currentCount + extraCount) + pullCount
     local countAfterPullText = ("%d"):format(countAfterPull)
 
     local remainingCountAfterPull = totalCount - countAfterPull
