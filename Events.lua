@@ -199,6 +199,10 @@ function WarpDeplete:GetEnemyForcesCount()
   return currentCount, totalCount
 end
 
+-- When a mob worth force dies, 3 functions run in a random order:
+-- 1. OnScenarioPOIUpdate
+-- 2. OnScenarioCriteraUpdate
+-- 3. OnCombatLogEvent
 function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   if not self.challengeState.inChallenge then return end
 
@@ -226,7 +230,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
 
     -- Need to check self.forcesState.currentCount prior to it being updated in SetForcesCurrent()
     -- to prevent false triggers and double adding forceCount
-    if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount then
+    if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed and fromCombatLog then
       -- If we just went above the total count (or matched it), we completed it just now
       self:PrintDebug("just hit >= 100%")
       self.forcesState.completed = true
@@ -234,14 +238,10 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       local rest = self.forcesState.totalCount - self.forcesState.currentCount
       self.forcesState.extraCount = forceCount - rest
       self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
-      self:SetForcesCurrent(currentCount)
+      self:SetForcesCurrent(self.forcesState.totalCount)
       return
     end
 
-    -- When a mob worth force dies, 3 functions run in a random order:
-    -- 1. OnScenarioPOIUpdate
-    -- 2. OnScenarioCriteraUpdate
-    -- 3. OnCombatLogEvent
     -- We want to make sure OnCombatLogEvent is what triggers SetForcesCurrent().
     -- If this check isn't here and if OnScenarioPOIUpdate or OnScenarioCriteraUpdate 
     -- run before OnCombatLogEvent and makes self.forcesState.currentCount be updated before a 
