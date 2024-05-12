@@ -210,6 +210,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
   self:PrintDebug("forceCount: " .. forceCount)
   self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
+  self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
   -- Only go down this path if the unclampForcesPercent is checked true
   -- have to include the MDT check or else it won't go above 0
