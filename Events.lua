@@ -202,42 +202,49 @@ end
 function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   if not self.challengeState.inChallenge then return end
 
-  self:PrintDebug("forceCount: " .. forceCount)
-  self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
-
-  if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount then
-    self:PrintDebug(">=100%")
-    local rest = self.forcesState.totalCount - self.forcesState.currentCount
-    self.forcesState.extraCount = forceCount - rest
-    self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
-  end
-
   local stepCount = select(3, C_Scenario.GetStepInfo())
   local currentCount = self:GetEnemyForcesCount()
   -- This mostly happens when we have already completed the dungeon
   if not currentCount then return end
   self:PrintDebug("currentCount: " .. currentCount)
-
-  -- currentCount never goes above totalCount - so it doesn't matter to continue function
-  -- check if we've reached that point
-  if self.forcesState.completed then 
-    self.forcesState.extraCount = self.forcesState.extraCount + forceCount
-    self:SetForcesCurrent(currentCount)
-    return 
-  end
+  self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
+  self:PrintDebug("forceCount: " .. forceCount)
+  self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
 
   -- only go down this path if the unclampForcesPercent is checked true
   if self.db.profile.unclampForcesPercent and MDT then
+
+    -- Once we're completed, we can start doing just focusing on extraCount
+    if self.forcesState.completed then 
+      self.forcesState.extraCount = self.forcesState.extraCount + forceCount
+      self:SetForcesCurrent(currentCount)
+      return
+    end
+
+    -- Need to check self.forcesState.currentCount prior to it being updated in SetForcesCurrent()
+    if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount then
+      -- If we just went above the total count (or matched it), we completed it just now
+      self:PrintDebug("just hit >= 100%")
+      self.forcesState.completed = true
+      self.forcesState.completedTime = self.timerState.current
+      local rest = self.forcesState.totalCount - self.forcesState.currentCount
+      self.forcesState.extraCount = forceCount - rest
+      self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
+      self:SetForcesCurrent(currentCount)
+      return
+    end
+
+    -- we want to make sure fromCombatLog is what triggers the update to not cause any false additions
+    if fromCombatLog then self:SetForcesCurrent(currentCount) end
+  -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
+  else
+
     if currentCount >= self.forcesState.totalCount and not self.forcesState.completed then
       -- If we just went above the total count (or matched it), we completed it just now
       self.forcesState.completed = true
       self.forcesState.completedTime = self.timerState.current
-      self:PrintDebug(">=100%")
     end
-    if fromCombatLog then self:SetForcesCurrent(currentCount) end
-    return
-  -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
-  else
+
     self:SetForcesCurrent(currentCount)
   end
 end
