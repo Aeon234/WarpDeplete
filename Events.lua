@@ -249,7 +249,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
     -- an inaccurate count.
     if fromCombatLog then 
       self:PrintDebug("Running SetForcesCurrent(currentCount)")
-      self:SetForcesCurrent(currentCount) 
+      self:SetForcesCurrent((currentCount + forceCount)) 
     end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
