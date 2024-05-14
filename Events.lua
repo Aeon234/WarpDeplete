@@ -216,12 +216,12 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
   self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
-  -- Only go down this path if the unclampForcesPercent is checked true
-  -- have to include the MDT check or else it won't go above 0
-  -- if a user has unclmapForcesPresent enabled, but no MDT
+  -- Only go down this path if the unclampForcesPercent is checked true.
+  -- Have to include the MDT check or else it won't go above 0
+  -- if a user has unclampForcesPrecent enabled but not MDT
   if self.db.profile.unclampForcesPercent and MDT then
 
-    -- Once we're completed, we can start doing just focusing on extraCount
+    -- Once we're completed, we can start focusing on only extraCount
     if self.forcesState.completed then 
       self.forcesState.extraCount = self.forcesState.extraCount + forceCount
       self:SetForcesCurrent(currentCount)
@@ -250,7 +250,13 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
     -- an inaccurate count.
     if fromCombatLog then 
       self:PrintDebug("Running SetForcesCurrent(currentCount)")
-      self:SetForcesCurrent((currentCount + forceCount)) 
+      -- this should be mean that OnCombatLogEvent isn't the first function to run
+      if self.forcesState.currentCount <= currentCount then
+        self:SetForcesCurrent(currentCount) 
+      -- this should mean that OnCombatLogEvent was the first function to run
+      elseif self.forcesState.currentCount > currentCount then 
+        self:SetForcesCurrent((currentCount + forceCount)) 
+      end
     end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
