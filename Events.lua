@@ -251,10 +251,10 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
     if fromCombatLog then 
       self:PrintDebug("Running SetForcesCurrent(currentCount)")
       -- this should be mean that OnCombatLogEvent isn't the first function to run
-      if self.forcesState.currentCount <= currentCount then
+      if self.forcesState.currentCount < currentCount then
         self:SetForcesCurrent(currentCount) 
       -- this should mean that OnCombatLogEvent was the first function to run
-      elseif self.forcesState.currentCount > currentCount then 
+      elseif self.forcesState.currentCount == currentCount then 
         self:SetForcesCurrent((currentCount + forceCount)) 
       end
     end
