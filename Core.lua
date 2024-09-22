@@ -27,6 +27,7 @@ WarpDeplete.defaultChallengeState = {
 WarpDeplete.defaultForcesState = {
   pullCount = 0,
   currentCount = 0,
+  extraCount = 0,
   totalCount = 100,
 
   pullPercent = 0,
