@@ -306,11 +306,11 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
 
-  if currentCount >= self.forcesState.totalCount and not self.forcesState.completed then
-    -- If we just went above the total count (or matched it), we completed it just now
-    self.forcesState.completed = true
-    self.forcesState.completedTime = self.timerState.current
-  end
+    if currentCount >= self.forcesState.totalCount and not self.forcesState.completed then
+      -- If we just went above the total count (or matched it), we completed it just now
+      self.forcesState.completed = true
+      self.forcesState.completedTime = self.timerState.current
+    end
 
     self:SetForcesCurrent(currentCount)
   end
