@@ -287,8 +287,8 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
-    -- OnScenarioPOIUpdate or OnScenarioCriteraUpdate executed first
-    if self.forcesState.currentCount < currentCount and currentCount ~= self.forcesState.totalCount then 
+    -- we only want OnScenarioPOIUpdate or OnScenarioCriteraUpdate executed
+    if currentCount < self.forcesState.totalCount and not fromCombatLog then 
       self:SetForcesCurrent(currentCount)
     end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
