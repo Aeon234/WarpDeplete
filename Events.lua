@@ -273,6 +273,9 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
+    -- need to check self.forcesState.currentCount ~= currentCount to
+    -- prevent false double counting due to the random execution order
+    -- of OnScenarioPOIUpdate, OnScenarioCriteraUpdate, and OnCombatLogEvent
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed and self.forcesState.currentCount ~= currentCount then
       -- If we just went above the total count (or matched it), we completed it just now
       self:PrintDebug("just hit >= 100%")
