@@ -273,9 +273,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
-    -- Need to check self.forcesState.currentCount prior to it being updated in SetForcesCurrent()
-    -- to prevent false triggers and double adding forceCount
-    if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed and fromCombatLog then
+    if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed and self.forcesState.currentCount ~= currentCount then
       -- If we just went above the total count (or matched it), we completed it just now
       self:PrintDebug("just hit >= 100%")
       self.forcesState.completed = true
