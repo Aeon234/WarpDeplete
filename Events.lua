@@ -113,7 +113,7 @@ function WarpDeplete:GetTimerInfo()
     C_Timer.After(0.5, function() 
       local current = select(2, GetWorldElapsedTime(1))
       local deaths = C_ChallengeMode.GetDeathCount()
-      local trueTime = current - deaths * 5
+      local trueTime = current - deaths * self.keyDetailsState.deathPenalty
       self.timerState.startOffset = trueTime
       self.timerState.startTime = GetTime()
       self.timerState.isBlizzardTimer = true
@@ -127,6 +127,37 @@ function WarpDeplete:GetTimerInfo()
   return true
 end
 
+-- TODO(happens): Add missing locales
+local affixNameFilters = {
+  ["enUS"] = {"Xal'atath's", "Challenger's", "Bargain:"},
+  ["deDE"] = {"Xal'ataths", "des Herausforderers", "Handel:"},
+  ["frFR"] = {},
+  ["itIT"] = {},
+  ["koKR"] = {},
+  ["zhCN"] = {},
+  ["zhTW"] = {},
+  ["ruRU"] = {},
+  ["esES"] = {},
+  ["esMX"] = {},
+  ["ptBR"] = {},
+}
+
+local locale = GetLocale()
+-- These should have the same names
+if locale == "enGB" then
+  locale = "enUS"
+end
+
+local function formatAffixName(name)
+  local result = name
+  local filters = affixNameFilters[locale] or {}
+  for _, filter in ipairs(filters) do
+    result = result:gsub(filter, "")
+  end
+
+  return result:match("^%s*(.-)%s*$")
+end
+
 function WarpDeplete:GetKeyInfo()
   self:PrintDebug("Getting key info")
 
@@ -134,10 +165,14 @@ function WarpDeplete:GetKeyInfo()
 
   local affixNames = {}
   local affixIds = {}
+  local deathPenalty = 5
   for i, affixID in ipairs(affixes) do
     local name = C_ChallengeMode.GetAffixInfo(affixID)
-    affixNames[i] = name
+    affixNames[i] = formatAffixName(name)
     affixIds[i] = affixID
+    if affixID == 152 then
+      deathPenalty = 15
+    end
   end
 
   if level <= 0 or #affixNames <= 0 then
@@ -145,13 +180,14 @@ function WarpDeplete:GetKeyInfo()
     return false
   end
 
-  self:SetKeyDetails(level or 0, affixNames, affixIds)
+  self:SetKeyDetails(level or 0, deathPenalty, affixNames, affixIds)
   return true
 end
 
 function WarpDeplete:GetObjectivesInfo()
   self:PrintDebug("Getting objectives info")
 
+  -- The last step is forces, all previous steps are bosses
   local stepCount = select(3, C_Scenario.GetStepInfo())
   if stepCount <= 0 then
     self:PrintDebug("No steps received, can't update objective info")
@@ -159,10 +195,9 @@ function WarpDeplete:GetObjectivesInfo()
   end
 
   local currentCount, totalCount = self:GetEnemyForcesCount()
-  -- The last step will forces, all previous steps are bosses
-  self:PrintDebug("Got forces info: " .. currentCount .. "/" .. totalCount)
+  self:PrintDebug("Got forces info: " .. tonumber(currentCount) .. "/" .. tonumber(totalCount))
 
-  if totalCount <= 0 then
+  if currentCount == nil or totalCount == nil then
     self:PrintDebug("No mob count received")
     return false
   end
@@ -172,10 +207,15 @@ function WarpDeplete:GetObjectivesInfo()
 
   local objectives = {}
   for i = 1, stepCount - 1 do
-    local name, _, completed = C_Scenario.GetCriteriaInfo(i)
+    local CriteriaInfo = C_ScenarioInfo.GetCriteriaInfo(i)
+    if CriteriaInfo == nil then return false end
+
+    local name = CriteriaInfo.description
+    local completed = CriteriaInfo.completed
     if not name then break end
 
-    name = gsub(name, " defeated", "")
+    name = name:gsub(" defeated", "")
+    name = name:gsub(" Defeated", "")
     self:PrintDebug("Got boss name for index " .. i .. ": " .. tostring(name))
     objectives[i] = { name = name, time = completed and 0 or nil }
   end
@@ -191,11 +231,17 @@ end
 
 function WarpDeplete:GetEnemyForcesCount()
   local stepCount = select(3, C_Scenario.GetStepInfo())
-  local _, _, _, _, totalCount, _, _, mobPointsStr = C_Scenario.GetCriteriaInfo(stepCount)
-  if not totalCount or not mobPointsStr then return nil, nil end
+  local CriteriaInfo = C_ScenarioInfo.GetCriteriaInfo(stepCount)
+  if not CriteriaInfo then return nil, nil end
 
-  local currentCountStr = gsub(mobPointsStr, "%%", "")
-  local currentCount = tonumber(currentCountStr)
+  local totalCount = CriteriaInfo.totalQuantity
+  local currentCountStr = CriteriaInfo.quantityString
+  if not currentCountStr or not totalCount then return nil, nil end
+
+  -- NOTE(happens): The current count contains a percentage sign
+  -- even though it's an absolute value.
+  local currentCount = tonumber(currentCountStr:match("%d+"))
+
   return currentCount, totalCount
 end
 
@@ -206,11 +252,10 @@ end
 function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   if not self.challengeState.inChallenge then return end
 
-  local stepCount = select(3, C_Scenario.GetStepInfo())
-  local currentCount = self:GetEnemyForcesCount()
+  local currentCount, totalCount = self:GetEnemyForcesCount()
   -- This mostly happens when we have already completed the dungeon
-  if not currentCount then return end
-  self:PrintDebug("currentCount: " .. currentCount)
+  if not currentCount or not totalCount then return end
+  self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
   self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
   self:PrintDebug("forceCount: " .. forceCount)
   self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
@@ -251,6 +296,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
     if fromCombatLog then 
       self:PrintDebug("Running SetForcesCurrent(currentCount)")
       -- this should be mean that OnCombatLogEvent isn't the first function to run
+      -- if self.forcesState.currentCount < currentCount or self.forcesState.currentCount + forceCount < self.forcesState.totalCount then
       if self.forcesState.currentCount < currentCount then
         self:SetForcesCurrent(currentCount) 
       -- this should mean that OnCombatLogEvent was the first function to run
@@ -282,10 +328,13 @@ function WarpDeplete:UpdateObjectives()
     if not objectives[i] or not objectives[i].time then
       -- If it wasn't completed before and it is now, we've just completed
       -- it and can set the completion time
-      local completed = select(3, C_Scenario.GetCriteriaInfo(i))
-      if completed then
-        objectives[i].time = self.timerState.current
-        changed = true
+      local CriteriaInfo = C_ScenarioInfo.GetCriteriaInfo(i)
+      if CriteriaInfo ~= nil then
+        local completed = CriteriaInfo.completed
+        if completed then
+          objectives[i].time = self.timerState.current
+          changed = true
+        end
       end
     end
   end
@@ -441,7 +490,7 @@ function WarpDeplete:UnregisterChallengeEvents()
   self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 end
 
-function WarpDeplete:OnTimerTick(elapsed) 
+function WarpDeplete:OnTimerTick(elapsed)
   if not self.challengeState.inChallenge or
     self.challengeState.challengeCompleted or
     not self.timerState.running then
@@ -460,10 +509,8 @@ function WarpDeplete:OnTimerTick(elapsed)
     self:SetDeaths(newDeaths)
   end
 
-  local deathPenalty = self.timerState.deaths * 5
+  local deathPenalty = self.timerState.deaths * self.keyDetailsState.deathPenalty
   local current = GetTime() + self.timerState.startOffset - self.timerState.startTime + deathPenalty
-
-  -- if current < 0 then return end
 
   self:SetTimerCurrent(current)
 end

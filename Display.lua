@@ -522,6 +522,7 @@ function WarpDeplete:UpdateTimerDisplay()
   end
 end
 
+-- Expects direct forces value
 function WarpDeplete:SetForcesTotal(totalCount)
   self.forcesState.totalCount = totalCount
   self.forcesState.pullPercent = totalCount > 0 and self.forcesState.pullCount / totalCount or 0
@@ -541,16 +542,8 @@ function WarpDeplete:SetForcesTotal(totalCount)
 end
 
 -- Expects direct forces value
-function WarpDeplete:SetForcesPull(pullCount)
-  self.forcesState.pullCount = pullCount
-  self.forcesState.pullPercent = self.forcesState.totalCount > 0
-    and pullCount / self.forcesState.totalCount or 0
-
-  self:UpdateForcesDisplay()
-end
-
--- Expects direct forces value
 function WarpDeplete:SetForcesCurrent(currentCount)
+  -- Check if we just completed the dungeon
   if self.forcesState.currentCount < self.forcesState.totalCount and
     currentCount >= self.forcesState.totalCount
   then
@@ -576,6 +569,15 @@ function WarpDeplete:SetForcesCurrent(currentCount)
   end
 
   self.forcesState.currentPercent = currentPercent
+
+  self:UpdateForcesDisplay()
+end
+
+-- Expects direct forces value
+function WarpDeplete:SetForcesPull(pullCount)
+  self.forcesState.pullCount = pullCount
+  self.forcesState.pullPercent = self.forcesState.totalCount > 0
+    and pullCount / self.forcesState.totalCount or 0
 
   self:UpdateForcesDisplay()
 end
@@ -762,8 +764,9 @@ function WarpDeplete:UpdateObjectivesDisplay()
 end
 
 -- Expects level as number and affixes as string array, e.g. {"Tyrannical", "Bolstering"}
-function WarpDeplete:SetKeyDetails(level, affixes, affixIds)
+function WarpDeplete:SetKeyDetails(level, deathPenalty, affixes, affixIds)
   self.keyDetailsState.level = level
+  self.keyDetailsState.deathPenalty = deathPenalty
   self.keyDetailsState.affixes = affixes
   self.keyDetailsState.affixIds = affixIds
 

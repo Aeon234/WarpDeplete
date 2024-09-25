@@ -741,7 +741,7 @@ function WarpDeplete:HandleChatCommand(input)
     self:PrintDebug("Offset: " .. self.timerState.startOffset .. ", " .. WarpDeplete.Util.formatTime(self.timerState.startOffset))
     self:PrintDebug("Start time: " .. self.timerState.startTime)
     self:PrintDebug("Deaths: " .. self.timerState.deaths)
-    local deathPenalty = self.timerState.deaths * 5
+    local deathPenalty = self.timerState.deaths * self.keyDetailsState.deathPenalty
     local current = GetTime() - self.timerState.startTime 
     local currentWithOffset = current + self.timerState.startOffset
     self:PrintDebug("Current: " .. current .. ", " .. WarpDeplete.Util.formatTime(current))
@@ -785,10 +785,7 @@ function WarpDeplete:HandleChatCommand(input)
     return
   end
 
-  -- We have to call this twice in a row due to a stupid bug...
-  -- See https://www.wowinterface.com/forums/showthread.php?t=54599
-  InterfaceOptionsFrame_OpenToCategory("WarpDeplete")
-  InterfaceOptionsFrame_OpenToCategory("WarpDeplete")
+  Settings.OpenToCategory("WarpDeplete")
 end
 
 function WarpDeplete.SetUnlocked(info, value)

@@ -36,7 +36,7 @@ WarpDeplete.defaultForcesState = {
   currentPull = {},
 
   completed = false,
-  completedTime = 0
+  completedTime = 0,
 }
 
 WarpDeplete.defaultTimerState = {
@@ -60,6 +60,7 @@ WarpDeplete.defaultObjectivesState = {}
 
 WarpDeplete.defaultKeyDetailsState = {
   level = 0,
+  deathPenalty = 0,
   affixes = {},
   affixIds = {}
 }
@@ -75,6 +76,12 @@ function WarpDeplete:OnInitialize()
   frames.root = CreateFrame("Frame", "WarpDepleteFrame", UIParent)
   frames.bars = CreateFrame("Frame", "WarpDepleteBars", frames.root)
   frames.deathsTooltip = CreateFrame("Frame", "WarpDepleteDeathsTooltip", frames.root)
+
+  -- We use an empty frame to which we parent the blizzard objective tracker.
+  -- This can then be hidden and not be affected by blizzard unhiding the
+  -- objective tracker itself.
+  frames.hiddenObjectiveTrackerParent = CreateFrame("frame")
+  frames.hiddenObjectiveTrackerParent:Hide()
 
   self.frames = frames
 end
@@ -109,7 +116,7 @@ function WarpDeplete:ShowMDTAlert()
   Util.showAlert(
     "MDT_NOT_FOUND",
     L["Mythic Dungeon Tools (MDT) is not installed."].."\n\n" ..
-    L["WarpDeplete will not display the count for you current pull."]
+    L["WarpDeplete will not display the count for your current pull."]
     .. " \n\n" .. L["Install MDT to enable this functionality."])
 end
 
@@ -152,7 +159,7 @@ function WarpDeplete:EnableDemoMode()
   end
 
   self:SetObjectives(objectives)
-  self:SetKeyDetails(30, {L["Tyrannical"], L["Bolstering"], L["Spiteful"]}, {9, 7, 123, 132})
+  self:SetKeyDetails(30, 15, {L["Tyrannical"], L["Bolstering"], L["Spiteful"], L["Peril"]}, {9, 7, 123, 152})
 
   self:SetTimerLimit(35 * 60)
   self:SetTimerRemaining(20 * 60)
@@ -198,31 +205,27 @@ end
 function WarpDeplete:ShowBlizzardObjectiveTracker()
   -- As SylingTracker replaces the blizzard objective tracker in hiding
   -- it, we prevent WarpDeplete to reshown the tracker.
-  if IsAddOnLoaded("SylingTracker") then 
-    return 
+  if C_AddOns.IsAddOnLoaded("SylingTracker") then
+    return
   end
 
+  -- FIXME(happens): See HideBlizzardObjectiveTracker
+  ObjectiveTrackerFrame:SetAlpha(1)
   ObjectiveTrackerFrame:Show()
+
+  if ObjectiveTrackerFrame:GetParent() == self.frames.hiddenObjectiveTrackerParent then
+    ObjectiveTrackerFrame:SetParent(self.originalObjectiveTrackerParent or UIParent)
+  end
 end
 
 function WarpDeplete:HideBlizzardObjectiveTracker()
+  -- FIXME(happens): The reparenting method seems to not work for some people.
+  -- As an additional fallback, we set the alpha to 0.
+  ObjectiveTrackerFrame:SetAlpha(0)
+
+  self.originalObjectiveTrackerParent = ObjectiveTrackerFrame:GetParent()
+  ObjectiveTrackerFrame:SetParent(self.frames.hiddenObjectiveTrackerParent)
   ObjectiveTrackerFrame:Hide()
-
-  -- Sometimes, the objective tracker isn't hidden
-  -- correctly. This can happen when WarpDeplete is
-  -- loaded before the blizzard dungeon timer.
-  -- In this case, we can to check again after a bit
-  -- to make sure we're actually hiding it.
-  C_Timer.After(1, function()
-    -- Check if we're still showing WDP
-    if not self.isShown then
-      self:PrintDebug("Skipping re-hiding objective frame, wdp closed")
-      return
-    end
-
-    self:PrintDebug("Re-hiding objective frame")
-    ObjectiveTrackerFrame:Hide()
-  end)
 end
 
 function WarpDeplete:ShowExternals()
