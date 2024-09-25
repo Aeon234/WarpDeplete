@@ -287,22 +287,9 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
-    -- We want to make sure OnCombatLogEvent is what triggers SetForcesCurrent().
-    -- If this check isn't here and if OnScenarioPOIUpdate or OnScenarioCriteraUpdate 
-    -- run before OnCombatLogEvent and makes self.forcesState.currentCount be updated before a 
-    -- proper check can happen with self.forcesState.currentCount + forceCount,
-    -- the mob that would push us over 100% would be double counted and produce
-    -- an inaccurate count.
-    if fromCombatLog then 
-      self:PrintDebug("Running SetForcesCurrent(currentCount)")
-      -- this should be mean that OnCombatLogEvent isn't the first function to run
-      -- if self.forcesState.currentCount < currentCount or self.forcesState.currentCount + forceCount < self.forcesState.totalCount then
-      if self.forcesState.currentCount < currentCount then
-        self:SetForcesCurrent(currentCount) 
-      -- this should mean that OnCombatLogEvent was the first function to run
-      elseif self.forcesState.currentCount == currentCount then 
-        self:SetForcesCurrent((currentCount + forceCount)) 
-      end
+    -- OnScenarioPOIUpdate or OnScenarioCriteraUpdate executed first
+    if self.forcesState.currentCount < currentCount and currentCount ~= self.forcesState.totalCount then 
+      self:SetForcesCurrent(currentCount)
     end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
