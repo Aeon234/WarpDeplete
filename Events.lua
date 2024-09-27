@@ -250,19 +250,21 @@ end
 -- 2. OnScenarioCriteraUpdate
 -- 3. OnCombatLogEvent
 function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
-  if not self.challengeState.inChallenge then return end
+
+  if not self.db.profile.unclampForcesPercent or not MDT then
+    if not self.challengeState.inChallenge then return end
+  end
 
   local currentCount, totalCount = self:GetEnemyForcesCount()
-  -- This mostly happens when we have already completed the dungeon
-  if not currentCount or not totalCount then return end
-  self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
-  self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
-  self:PrintDebug("forceCount: " .. forceCount)
-  self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
-  self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
+  
+  if not self.db.profile.unclampForcesPercent or not MDT then
+    -- This mostly happens when we have already completed the dungeon
+    if not currentCount or not totalCount then return end
+  end
 
-  -- Only go down this path if the unclampForcesPercent is checked true.
-  -- Have to include the MDT check or else it won't go above 0
+  self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
+
+  -- Have to include the MDT check or else count won't go above 0
   -- if a user has unclampForcesPrecent enabled but not MDT
   if self.db.profile.unclampForcesPercent and MDT then
 
@@ -273,7 +275,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
-    -- need to check self.forcesState.currentCount ~= currentCount to
+    -- Need to check self.forcesState.currentCount ~= currentCount to
     -- prevent false double counting due to the random execution order
     -- of OnScenarioPOIUpdate, OnScenarioCriteraUpdate, and OnCombatLogEvent
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed and self.forcesState.currentCount ~= currentCount then
@@ -288,7 +290,8 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
-    -- we only want OnScenarioPOIUpdate or OnScenarioCriteraUpdate executed
+    -- we only want OnScenarioPOIUpdate or OnScenarioCriteraUpdate to run this
+    -- since OnCombatLogEvent doesn't get a proper currentCount value
     if currentCount < self.forcesState.totalCount and not fromCombatLog then 
       self:SetForcesCurrent(currentCount)
     end
@@ -645,7 +648,6 @@ function WarpDeplete:OnCombatLogEvent(ev)
 
   -- count extras - requires MDT to be enabled as well to get the guidForceCount
   if self.db.profile.unclampForcesPercent and MDT then
-    -- get the force amount for mob that just died
     local npcID = select(6, strsplit("-", guid))
     local guidForceCount = MDT:GetEnemyForces(tonumber(npcID)) 
     self:PrintDebug("Mob died worth: " .. guidForceCount)
