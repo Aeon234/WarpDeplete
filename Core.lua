@@ -116,8 +116,7 @@ function WarpDeplete:ShowMDTAlert()
   Util.showAlert(
     "MDT_NOT_FOUND",
     L["Mythic Dungeon Tools (MDT) is not installed."].."\n\n" ..
-    L["WarpDeplete will not display the count for your current pull."].."\n\n" ..
-    L["WarpDeplete will not count above 100% even if you have the option enabled."]
+    L["WarpDeplete will not display the count for your current pull."]
     .. " \n\n" .. L["Install MDT to enable this functionality."])
 end
 
