@@ -245,11 +245,17 @@ function WarpDeplete:GetEnemyForcesCount()
   return currentCount, totalCount
 end
 
+function WarpDeplete:ResetUpdateForcesTriggers()
+  self.forcesState.fromCombatLog = false
+  self.forcesState.fromScenarioPOI = false
+  self.forcesState.fromScenarioCritera = false
+end
+
 -- When a mob worth force dies, 3 functions run in a random order:
 -- 1. OnScenarioPOIUpdate
 -- 2. OnScenarioCriteraUpdate
 -- 3. OnCombatLogEvent
-function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
+function WarpDeplete:UpdateForces(forceCount)
 
   if not self.db.profile.unclampForcesPercent or not MDT then
     if not self.challengeState.inChallenge then return end
@@ -265,7 +271,9 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
   self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
   self:PrintDebug("forceCount: " .. forceCount)
-  self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
+  self:PrintDebug("fromCombatLog: " .. tostring(self.forcesState.fromCombatLog))
+  self:PrintDebug("fromScenarioPOI: " .. tostring(self.forcesState.fromScenarioPOI))
+  self:PrintDebug("fromScenarioCritera: " .. tostring(self.forcesState.fromScenarioCritera))
   self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
   -- Have to include the MDT check or else count won't go above 0
@@ -279,26 +287,42 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
       return
     end
 
+    -- +30 400/460
+    -- should be 430/460
+
     -- Need to check self.forcesState.currentCount ~= currentCount to
     -- prevent false double counting due to the random execution order
     -- of OnScenarioPOIUpdate, OnScenarioCriteraUpdate, and OnCombatLogEvent
-    if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed and self.forcesState.currentCount ~= currentCount then
-      -- If we just went above the total count (or matched it), we completed it just now
-      self:PrintDebug("just hit >= 100%")
-      self.forcesState.completed = true
-      self.forcesState.completedTime = self.timerState.current
-      local rest = self.forcesState.totalCount - self.forcesState.currentCount
-      self.forcesState.extraCount = forceCount - rest
-      self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
-      self:SetForcesCurrent(self.forcesState.totalCount)
-      return
+    if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed then
+      -- Second check to ensure this isn't a false double count.
+      -- First condition is if onCombatLogEvent execues second or third.
+      -- Second condition is if onCombatLogEvent executes first.
+      if (currentCount == self.forcesState.totalCount and 
+      (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCritera)) or 
+      (self.forcesState.currentCount == currentCount and 
+      not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCritera) then
+        -- If we just went above the total count (or matched it), we completed it just now
+        self:PrintDebug("just hit >= 100%")
+        self.forcesState.completed = true
+        self.forcesState.completedTime = self.timerState.current
+        local rest = self.forcesState.totalCount - self.forcesState.currentCount
+        self.forcesState.extraCount = forceCount - rest
+        self:PrintDebug("extraCount: " .. self.forcesState.extraCount)
+        self:SetForcesCurrent(self.forcesState.totalCount)
+        return
+      end
     end
 
     -- we only want OnScenarioPOIUpdate or OnScenarioCriteraUpdate to run this
     -- since OnCombatLogEvent doesn't get a proper currentCount value
-    if currentCount < self.forcesState.totalCount and not fromCombatLog then 
+    if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCritera)  then 
       self:SetForcesCurrent(currentCount)
     end
+
+    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioPOI and self.forcesState.fromScenarioCritera then 
+      self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCritera")
+      self:ResetUpdateForcesTriggers()
+    end 
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
 
@@ -344,7 +368,8 @@ function WarpDeplete:ResetCurrentPull()
   for k, _ in pairs(self.forcesState.currentPull) do
     self.forcesState.currentPull[k] = nil
   end
-
+  self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCritera")
+  self:ResetUpdateForcesTriggers()
   self:SetForcesPull(0)
 end
 
@@ -592,13 +617,15 @@ end
 
 function WarpDeplete:OnScenarioPOIUpdate(ev)
   self:PrintDebugEvent(ev)
-  self:UpdateForces(0, false)
+  self.forcesState.fromScenarioPOI = true
+  self:UpdateForces(0)
   self:UpdateObjectives()
 end
 
 function WarpDeplete:OnScenarioCriteriaUpdate(ev)
   self:PrintDebugEvent(ev)
-  self:UpdateForces(0, false)
+  self.forcesState.fromScenarioCritera = true
+  self:UpdateForces(0)
   self:UpdateObjectives()
 end
 
@@ -655,7 +682,8 @@ function WarpDeplete:OnCombatLogEvent(ev)
     local npcID = select(6, strsplit("-", guid))
     local guidForceCount = MDT:GetEnemyForces(tonumber(npcID)) 
     self:PrintDebug("Mob died worth: " .. guidForceCount)
-    self:UpdateForces(guidForceCount, true)
+    self.forcesState.fromCombatLog = true
+    self:UpdateForces(guidForceCount)
   end
 
   self.forcesState.currentPull[guid] = "DEAD"
