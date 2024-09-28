@@ -263,6 +263,10 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
   end
 
   self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
+  self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
+  self:PrintDebug("forceCount: " .. forceCount)
+  self:PrintDebug("fromCombatLog: " .. tostring(fromCombatLog))
+  self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
   -- Have to include the MDT check or else count won't go above 0
   -- if a user has unclampForcesPrecent enabled but not MDT
