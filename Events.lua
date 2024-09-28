@@ -275,7 +275,7 @@ function WarpDeplete:UpdateForces(forceCount, fromCombatLog)
     -- Once we're completed, we can start focusing on only extraCount
     if self.forcesState.completed then 
       self.forcesState.extraCount = self.forcesState.extraCount + forceCount
-      self:SetForcesCurrent(currentCount)
+      self:SetForcesCurrent(self.forcesState.totalCount)
       return
     end
 
