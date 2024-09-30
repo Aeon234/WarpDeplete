@@ -246,6 +246,7 @@ function WarpDeplete:GetEnemyForcesCount()
 end
 
 function WarpDeplete:ResetUpdateForcesTriggers()
+  self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCritera")
   self.forcesState.fromCombatLog = false
   self.forcesState.fromScenarioPOI = false
   self.forcesState.fromScenarioCritera = false
@@ -287,20 +288,17 @@ function WarpDeplete:UpdateForces(forceCount)
       return
     end
 
-    -- +30 400/460
-    -- should be 430/460
-
     -- Need to check self.forcesState.currentCount ~= currentCount to
     -- prevent false double counting due to the random execution order
     -- of OnScenarioPOIUpdate, OnScenarioCriteraUpdate, and OnCombatLogEvent
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed then
+      self:PrintDebug("self.forcesState.currentCount + forceCount >= self.forcesState.totalCount")
       -- Second check to ensure this isn't a false double count.
       -- First condition is if onCombatLogEvent execues second or third.
       -- Second condition is if onCombatLogEvent executes first.
       if (currentCount == self.forcesState.totalCount and 
       (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCritera)) or 
-      (self.forcesState.currentCount == currentCount and 
-      not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCritera) then
+      (self.forcesState.currentCount == currentCount and not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCritera) then
         -- If we just went above the total count (or matched it), we completed it just now
         self:PrintDebug("just hit >= 100%")
         self.forcesState.completed = true
@@ -320,7 +318,6 @@ function WarpDeplete:UpdateForces(forceCount)
     end
 
     if self.forcesState.fromCombatLog and self.forcesState.fromScenarioPOI and self.forcesState.fromScenarioCritera then 
-      self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCritera")
       self:ResetUpdateForcesTriggers()
     end 
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
@@ -368,7 +365,6 @@ function WarpDeplete:ResetCurrentPull()
   for k, _ in pairs(self.forcesState.currentPull) do
     self.forcesState.currentPull[k] = nil
   end
-  self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCritera")
   self:ResetUpdateForcesTriggers()
   self:SetForcesPull(0)
 end
