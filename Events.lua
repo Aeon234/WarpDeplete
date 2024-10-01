@@ -294,9 +294,12 @@ function WarpDeplete:UpdateForces(forceCount)
       -- Second check to ensure this isn't a false double count.
       -- First condition is if onCombatLogEvent execues second or third.
       -- Second condition is if onCombatLogEvent executes first.
+      -- The currentCount == 0 usually only happens when all bosses are killed
+      -- prior to force being completed.
       if ((currentCount == self.forcesState.totalCount or currentCount == 0) and
       (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria)) or
-      (self.forcesState.currentCount == currentCount and not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCriteria) then
+      ((self.forcesState.currentCount == currentCount or currentCount == 0) and
+      not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCriteria) then
         -- If we just went above the total count (or matched it), we completed it just now
         self:PrintDebug("just hit >= 100%")
         self.forcesState.completed = true
