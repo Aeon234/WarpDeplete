@@ -252,10 +252,6 @@ function WarpDeplete:ResetUpdateForcesTriggers()
   self.forcesState.fromScenarioCriteria = false
 end
 
--- When a mob worth force dies, 3 functions run in a random order:
--- 1. OnScenarioPOIUpdate
--- 2. OnScenarioCriteriaUpdate
--- 3. OnCombatLogEvent
 function WarpDeplete:UpdateForces(forceCount)
 
   if not self.db.profile.unclampForcesPercent or not MDT then
@@ -263,7 +259,7 @@ function WarpDeplete:UpdateForces(forceCount)
   end
 
   local currentCount, totalCount = self:GetEnemyForcesCount()
-  
+
   if not self.db.profile.unclampForcesPercent or not MDT then
     -- This mostly happens when we have already completed the dungeon
     if not currentCount or not totalCount then return end
@@ -282,22 +278,24 @@ function WarpDeplete:UpdateForces(forceCount)
   if self.db.profile.unclampForcesPercent and MDT then
 
     -- Once we're completed, we can start focusing on only extraCount
-    if self.forcesState.completed then 
+    if self.forcesState.completed then
       self.forcesState.extraCount = self.forcesState.extraCount + forceCount
       self:SetForcesCurrent(self.forcesState.totalCount)
       return
     end
 
-    -- Need to check self.forcesState.currentCount ~= currentCount to
-    -- prevent false double counting due to the random execution order
-    -- of OnScenarioPOIUpdate, OnScenarioCriteriaUpdate, and OnCombatLogEvent
+    -- When a mob worth force dies, 3 functions run in a random order:
+    -- 1. OnScenarioPOIUpdate
+    -- 2. OnScenarioCriteriaUpdate
+    -- 3. OnCombatLogEvent
+    -- So we have to do additional checks since order does matter.
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed then
       self:PrintDebug("self.forcesState.currentCount + forceCount >= self.forcesState.totalCount")
       -- Second check to ensure this isn't a false double count.
       -- First condition is if onCombatLogEvent execues second or third.
       -- Second condition is if onCombatLogEvent executes first.
-      if (currentCount == self.forcesState.totalCount and 
-      (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria)) or 
+      if ((currentCount == self.forcesState.totalCount or currentCount == 0) and
+      (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria)) or
       (self.forcesState.currentCount == currentCount and not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCriteria) then
         -- If we just went above the total count (or matched it), we completed it just now
         self:PrintDebug("just hit >= 100%")
@@ -313,13 +311,13 @@ function WarpDeplete:UpdateForces(forceCount)
 
     -- we only want OnScenarioPOIUpdate or OnScenarioCriteriaUpdate to run this
     -- since OnCombatLogEvent doesn't get a proper currentCount value
-    if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria)  then 
+    if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria) then
       self:SetForcesCurrent(currentCount)
     end
 
-    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioPOI and self.forcesState.fromScenarioCriteria then 
+    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioPOI and self.forcesState.fromScenarioCriteria then
       self:ResetUpdateForcesTriggers()
-    end 
+    end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
 
@@ -676,7 +674,7 @@ function WarpDeplete:OnCombatLogEvent(ev)
   -- count extras - requires MDT to be enabled as well to get the guidForceCount
   if self.db.profile.unclampForcesPercent and MDT then
     local npcID = select(6, strsplit("-", guid))
-    local guidForceCount = MDT:GetEnemyForces(tonumber(npcID)) 
+    local guidForceCount = MDT:GetEnemyForces(tonumber(npcID))
     self:PrintDebug("Mob died worth: " .. guidForceCount)
     self.forcesState.fromCombatLog = true
     self:UpdateForces(guidForceCount)
