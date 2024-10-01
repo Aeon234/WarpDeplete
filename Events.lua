@@ -274,7 +274,7 @@ function WarpDeplete:UpdateForces(forceCount)
   self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
   -- Have to include the MDT check or else count won't go above 0
-  -- if a user has unclampForcesPrecent enabled but not MDT
+  -- if a user has unclampForcesPrecent enabled but not MDT.
   if self.db.profile.unclampForcesPercent and MDT then
 
     -- Once we're completed, we can start focusing on only extraCount
@@ -288,11 +288,10 @@ function WarpDeplete:UpdateForces(forceCount)
     -- 1. OnScenarioPOIUpdate
     -- 2. OnScenarioCriteriaUpdate
     -- 3. OnCombatLogEvent
-    -- So we have to do additional checks since order does matter.
+    -- So we have to do an additional check since order does matter.
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed then
       self:PrintDebug("self.forcesState.currentCount + forceCount >= self.forcesState.totalCount")
-      -- Second check to ensure this isn't a false double count.
-      -- First condition is if onCombatLogEvent execues second or third.
+      -- First condition is if onCombatLogEvent executes second or third.
       -- Second condition is if onCombatLogEvent executes first.
       -- The currentCount == 0 usually only happens when all bosses are killed
       -- prior to force being completed.
@@ -313,7 +312,7 @@ function WarpDeplete:UpdateForces(forceCount)
     end
 
     -- we only want OnScenarioPOIUpdate or OnScenarioCriteriaUpdate to run this
-    -- since OnCombatLogEvent doesn't get a proper currentCount value
+    -- since OnCombatLogEvent doesn't get a proper currentCount value.
     if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria) then
       self:SetForcesCurrent(currentCount)
     end
