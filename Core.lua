@@ -36,7 +36,7 @@ WarpDeplete.defaultForcesState = {
   currentPull = {},
 
   fromCombatLog = false,
-  fromScenarioCritera = false,
+  fromScenarioCriteria = false,
   fromScenarioPOI = false,
 
   completed = false,

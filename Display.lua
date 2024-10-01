@@ -539,7 +539,7 @@ function WarpDeplete:SetForcesTotal(totalCount)
   self.forcesState.completedTime = 0
 
   self.forcesState.fromCombatLog = false
-  self.forcesState.fromScenarioCritera = false
+  self.forcesState.fromScenarioCriteria = false
   self.forcesState.fromScenarioPOI = false
 
   self:UpdateForcesDisplay()

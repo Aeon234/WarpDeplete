@@ -246,15 +246,15 @@ function WarpDeplete:GetEnemyForcesCount()
 end
 
 function WarpDeplete:ResetUpdateForcesTriggers()
-  self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCritera")
+  self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCriteria")
   self.forcesState.fromCombatLog = false
   self.forcesState.fromScenarioPOI = false
-  self.forcesState.fromScenarioCritera = false
+  self.forcesState.fromScenarioCriteria = false
 end
 
 -- When a mob worth force dies, 3 functions run in a random order:
 -- 1. OnScenarioPOIUpdate
--- 2. OnScenarioCriteraUpdate
+-- 2. OnScenarioCriteriaUpdate
 -- 3. OnCombatLogEvent
 function WarpDeplete:UpdateForces(forceCount)
 
@@ -274,7 +274,7 @@ function WarpDeplete:UpdateForces(forceCount)
   self:PrintDebug("forceCount: " .. forceCount)
   self:PrintDebug("fromCombatLog: " .. tostring(self.forcesState.fromCombatLog))
   self:PrintDebug("fromScenarioPOI: " .. tostring(self.forcesState.fromScenarioPOI))
-  self:PrintDebug("fromScenarioCritera: " .. tostring(self.forcesState.fromScenarioCritera))
+  self:PrintDebug("fromScenarioCriteria: " .. tostring(self.forcesState.fromScenarioCriteria))
   self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
   -- Have to include the MDT check or else count won't go above 0
@@ -290,15 +290,15 @@ function WarpDeplete:UpdateForces(forceCount)
 
     -- Need to check self.forcesState.currentCount ~= currentCount to
     -- prevent false double counting due to the random execution order
-    -- of OnScenarioPOIUpdate, OnScenarioCriteraUpdate, and OnCombatLogEvent
+    -- of OnScenarioPOIUpdate, OnScenarioCriteriaUpdate, and OnCombatLogEvent
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed then
       self:PrintDebug("self.forcesState.currentCount + forceCount >= self.forcesState.totalCount")
       -- Second check to ensure this isn't a false double count.
       -- First condition is if onCombatLogEvent execues second or third.
       -- Second condition is if onCombatLogEvent executes first.
       if (currentCount == self.forcesState.totalCount and 
-      (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCritera)) or 
-      (self.forcesState.currentCount == currentCount and not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCritera) then
+      (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria)) or 
+      (self.forcesState.currentCount == currentCount and not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCriteria) then
         -- If we just went above the total count (or matched it), we completed it just now
         self:PrintDebug("just hit >= 100%")
         self.forcesState.completed = true
@@ -311,13 +311,13 @@ function WarpDeplete:UpdateForces(forceCount)
       end
     end
 
-    -- we only want OnScenarioPOIUpdate or OnScenarioCriteraUpdate to run this
+    -- we only want OnScenarioPOIUpdate or OnScenarioCriteriaUpdate to run this
     -- since OnCombatLogEvent doesn't get a proper currentCount value
-    if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCritera)  then 
+    if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria)  then 
       self:SetForcesCurrent(currentCount)
     end
 
-    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioPOI and self.forcesState.fromScenarioCritera then 
+    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioPOI and self.forcesState.fromScenarioCriteria then 
       self:ResetUpdateForcesTriggers()
     end 
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
@@ -620,7 +620,7 @@ end
 
 function WarpDeplete:OnScenarioCriteriaUpdate(ev)
   self:PrintDebugEvent(ev)
-  self.forcesState.fromScenarioCritera = true
+  self.forcesState.fromScenarioCriteria = true
   self:UpdateForces(0)
   self:UpdateObjectives()
 end
