@@ -302,19 +302,32 @@ function WarpDeplete:UpdateForces(forceCount)
       end
     end
 
-    -- we only want OnScenarioCriteriaUpdate or fromScenarioPOI to run this since
+    -- We only want OnScenarioCriteriaUpdate or fromScenarioPOI to run this since
     -- OnCombatLogEvent doesn't get a proper currentCount value.
+    -- The count should always restore/fix itself here if it happens to be off from the
+    -- manual OnCombatLogEvent execution of SetForcesCurrent.
     if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioCriteria or self.forcesState.fromScenarioPOI) then
       self:SetForcesCurrent(currentCount)
     end
 
-    -- the second condition sometimes happens due to OnScenarioPOIUpdate
+    -- Sometimes there will be a weird interaction that occurs when two mobs worth force
+    -- die at exact same time tick. The execution order of OnScenarioPOIUpdate, 
+    -- OnScenarioCriteriaUpdate, and OnCombatLogEvent make them so they run twice before running
+    -- the next one.
+    -- E.x OnScenarioPOIUpdate -> OnScenarioPOIUpdate -> OnCombatLogEvent -> OnCombatLogEvent, etc.
+    -- This check here, is to try keep count accurate.
+    if currentCount == self.forcesState.currentCount and 
+    not self.forcesState.fromScenarioCriteria and not self.forcesState.fromScenarioPOI then
+      self:SetForcesCurrent((self.forcesState.currentCount + forceCount))
+    end
+
+    -- The second condition sometimes happens due to OnScenarioPOIUpdate
     -- executing after every other event has finished, leaving the values in a weird state.
     if (self.forcesState.fromCombatLog and self.forcesState.fromScenarioCriteria and self.forcesState.fromScenarioPOI) or
     (not self.forcesState.fromCombatLog and not self.forcesState.fromScenarioCriteria and self.forcesState.fromScenarioPOI) then
       self:ResetUpdateForcesTriggers()
     end
-  -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
+  -- Otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
     if not self.challengeState.inChallenge then return end
 
