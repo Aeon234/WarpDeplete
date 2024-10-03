@@ -302,9 +302,9 @@ function WarpDeplete:UpdateForces(forceCount)
       end
     end
 
-    -- we only want OnScenarioCriteriaUpdate to run this since
+    -- we only want OnScenarioCriteriaUpdate or fromScenarioPOI to run this since
     -- OnCombatLogEvent doesn't get a proper currentCount value.
-    if currentCount < self.forcesState.totalCount and self.forcesState.fromScenarioCriteria and self.forcesState.fromScenarioPOI then
+    if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioCriteria or self.forcesState.fromScenarioPOI) then
       self:SetForcesCurrent(currentCount)
     end
 
