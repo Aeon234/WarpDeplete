@@ -246,36 +246,27 @@ function WarpDeplete:GetEnemyForcesCount()
 end
 
 function WarpDeplete:ResetUpdateForcesTriggers()
-  self:PrintDebug("Resetting fromCombatLog, fromScenarioPOI, and fromScenarioCriteria")
+  self:PrintDebug("Resetting fromCombatLog and fromScenarioCriteria")
   self.forcesState.fromCombatLog = false
-  self.forcesState.fromScenarioPOI = false
+  -- self.forcesState.fromScenarioPOI = false
   self.forcesState.fromScenarioCriteria = false
 end
 
 function WarpDeplete:UpdateForces(forceCount)
 
-  if not self.db.profile.unclampForcesPercent or not MDT then
-    if not self.challengeState.inChallenge then return end
-  end
-
-  local currentCount, totalCount = self:GetEnemyForcesCount()
-
-  if not self.db.profile.unclampForcesPercent or not MDT then
-    -- This mostly happens when we have already completed the dungeon
-    if not currentCount or not totalCount then return end
-  end
-
-  self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
-  self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
-  self:PrintDebug("forceCount: " .. forceCount)
-  self:PrintDebug("fromCombatLog: " .. tostring(self.forcesState.fromCombatLog))
-  self:PrintDebug("fromScenarioPOI: " .. tostring(self.forcesState.fromScenarioPOI))
-  self:PrintDebug("fromScenarioCriteria: " .. tostring(self.forcesState.fromScenarioCriteria))
-  self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
-
   -- Have to include the MDT check or else count won't go above 0
   -- if a user has unclampForcesPrecent enabled but not MDT.
   if self.db.profile.unclampForcesPercent and MDT then
+
+    local currentCount, totalCount = self:GetEnemyForcesCount()
+
+    self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
+    self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
+    self:PrintDebug("forceCount: " .. forceCount)
+    self:PrintDebug("fromCombatLog: " .. tostring(self.forcesState.fromCombatLog))
+    -- self:PrintDebug("fromScenarioPOI: " .. tostring(self.forcesState.fromScenarioPOI))
+    self:PrintDebug("fromScenarioCriteria: " .. tostring(self.forcesState.fromScenarioCriteria))
+    self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
     -- Once we're completed, we can start focusing on only extraCount
     if self.forcesState.completed then
@@ -284,8 +275,7 @@ function WarpDeplete:UpdateForces(forceCount)
       return
     end
 
-    -- When a mob worth force dies, 3 functions run in a random order:
-    -- 1. OnScenarioPOIUpdate
+    -- When a mob worth force dies, 2 functions run in a random order:
     -- 2. OnScenarioCriteriaUpdate
     -- 3. OnCombatLogEvent
     -- So we have to do an additional check since order does matter.
@@ -293,12 +283,9 @@ function WarpDeplete:UpdateForces(forceCount)
       self:PrintDebug("self.forcesState.currentCount + forceCount >= self.forcesState.totalCount")
       -- First condition is if onCombatLogEvent executes second or third.
       -- Second condition is if onCombatLogEvent executes first.
-      -- The currentCount == 0 usually only happens when all bosses are killed
-      -- prior to force being completed.
-      if ((currentCount == self.forcesState.totalCount or currentCount == 0) and
-      (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria)) or
-      ((self.forcesState.currentCount == currentCount or currentCount == 0) and
-      not self.forcesState.fromScenarioPOI and not self.forcesState.fromScenarioCriteria) then
+      -- The currentCount == 0 usually only happens when all bosses are killed prior to force being completed.
+      if ((currentCount == self.forcesState.totalCount or currentCount == 0) and self.forcesState.fromScenarioCriteria) or
+      ((self.forcesState.currentCount == currentCount) and not self.forcesState.fromScenarioCriteria) then
         -- If we just went above the total count (or matched it), we completed it just now
         self:PrintDebug("just hit >= 100%")
         self.forcesState.completed = true
@@ -311,19 +298,25 @@ function WarpDeplete:UpdateForces(forceCount)
       end
     end
 
-    -- we only want OnScenarioPOIUpdate or OnScenarioCriteriaUpdate to run this
-    -- since OnCombatLogEvent doesn't get a proper currentCount value.
-    if currentCount < self.forcesState.totalCount and (self.forcesState.fromScenarioPOI or self.forcesState.fromScenarioCriteria) then
+    -- we only want OnScenarioCriteriaUpdate to run this since
+    -- OnCombatLogEvent doesn't get a proper currentCount value.
+    if currentCount < self.forcesState.totalCount and self.forcesState.fromScenarioCriteria then
       self:SetForcesCurrent(currentCount)
     end
 
-    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioPOI and self.forcesState.fromScenarioCriteria then
+    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioCriteria then
       self:ResetUpdateForcesTriggers()
     end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
   else
+    if not self.challengeState.inChallenge then return end
 
-    if currentCount >= self.forcesState.totalCount and not self.forcesState.completed then
+    local currentCount, totalCount = self:GetEnemyForcesCount()
+    -- This mostly happens when we have already completed the dungeon
+    if not currentCount or not totalCount then return end
+    self:PrintDebug("Count: " .. tostring(currentCount) .. "/" .. tostring(totalCount))
+
+    if currentCount >= totalCount and not self.forcesState.completed then
       -- If we just went above the total count (or matched it), we completed it just now
       self.forcesState.completed = true
       self.forcesState.completedTime = self.timerState.current
@@ -613,7 +606,7 @@ end
 
 function WarpDeplete:OnScenarioPOIUpdate(ev)
   self:PrintDebugEvent(ev)
-  self.forcesState.fromScenarioPOI = true
+  -- self.forcesState.fromScenarioPOI = true
   self:UpdateForces(0)
   self:UpdateObjectives()
 end
