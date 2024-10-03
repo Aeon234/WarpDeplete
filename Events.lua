@@ -248,7 +248,7 @@ end
 function WarpDeplete:ResetUpdateForcesTriggers()
   self:PrintDebug("Resetting fromCombatLog and fromScenarioCriteria")
   self.forcesState.fromCombatLog = false
-  -- self.forcesState.fromScenarioPOI = false
+  self.forcesState.fromScenarioPOI = false
   self.forcesState.fromScenarioCriteria = false
 end
 
@@ -264,7 +264,7 @@ function WarpDeplete:UpdateForces(forceCount)
     self:PrintDebug("self.forcesState.currentCount: " .. self.forcesState.currentCount)
     self:PrintDebug("forceCount: " .. forceCount)
     self:PrintDebug("fromCombatLog: " .. tostring(self.forcesState.fromCombatLog))
-    -- self:PrintDebug("fromScenarioPOI: " .. tostring(self.forcesState.fromScenarioPOI))
+    self:PrintDebug("fromScenarioPOI: " .. tostring(self.forcesState.fromScenarioPOI))
     self:PrintDebug("fromScenarioCriteria: " .. tostring(self.forcesState.fromScenarioCriteria))
     self:PrintDebug("self.forcesState.completed: " .. tostring(self.forcesState.completed))
 
@@ -275,17 +275,21 @@ function WarpDeplete:UpdateForces(forceCount)
       return
     end
 
-    -- When a mob worth force dies, 2 functions run in a random order:
+    -- When a mob worth force dies, 3 functions run in a random order:
+    -- 1. OnScenarioPOIUpdate
     -- 2. OnScenarioCriteriaUpdate
     -- 3. OnCombatLogEvent
     -- So we have to do an additional check since order does matter.
+    -- However, OnScenarioPOIUpdate seems to always execute after OnScenarioCriteriaUpdate.
     if self.forcesState.currentCount + forceCount >= self.forcesState.totalCount and not self.forcesState.completed then
       self:PrintDebug("self.forcesState.currentCount + forceCount >= self.forcesState.totalCount")
       -- First condition is if onCombatLogEvent executes second or third.
       -- Second condition is if onCombatLogEvent executes first.
       -- The currentCount == 0 usually only happens when all bosses are killed prior to force being completed.
-      if ((currentCount == self.forcesState.totalCount or currentCount == 0) and self.forcesState.fromScenarioCriteria) or
-      ((self.forcesState.currentCount == currentCount) and not self.forcesState.fromScenarioCriteria) then
+      if ((currentCount == self.forcesState.totalCount or currentCount == 0) and
+      (self.forcesState.fromScenarioCriteria or self.forcesState.fromScenarioPOI)) or
+      ((self.forcesState.currentCount == currentCount or currentCount == 0) and
+      not self.forcesState.fromScenarioCriteria and not self.forcesState.fromScenarioPOI) then
         -- If we just went above the total count (or matched it), we completed it just now
         self:PrintDebug("just hit >= 100%")
         self.forcesState.completed = true
@@ -300,11 +304,14 @@ function WarpDeplete:UpdateForces(forceCount)
 
     -- we only want OnScenarioCriteriaUpdate to run this since
     -- OnCombatLogEvent doesn't get a proper currentCount value.
-    if currentCount < self.forcesState.totalCount and self.forcesState.fromScenarioCriteria then
+    if currentCount < self.forcesState.totalCount and self.forcesState.fromScenarioCriteria and self.forcesState.fromScenarioPOI then
       self:SetForcesCurrent(currentCount)
     end
 
-    if self.forcesState.fromCombatLog and self.forcesState.fromScenarioCriteria then
+    -- the second condition sometimes happens due to OnScenarioPOIUpdate
+    -- executing after every other event has finished, leaving the values in a weird state.
+    if (self.forcesState.fromCombatLog and self.forcesState.fromScenarioCriteria and self.forcesState.fromScenarioPOI) or
+    (not self.forcesState.fromCombatLog and not self.forcesState.fromScenarioCriteria and self.forcesState.fromScenarioPOI) then
       self:ResetUpdateForcesTriggers()
     end
   -- otherwise, behave like normal and always pass through the value returned from self:GetEnemyForcesCount()
@@ -606,7 +613,7 @@ end
 
 function WarpDeplete:OnScenarioPOIUpdate(ev)
   self:PrintDebugEvent(ev)
-  -- self.forcesState.fromScenarioPOI = true
+  self.forcesState.fromScenarioPOI = true
   self:UpdateForces(0)
   self:UpdateObjectives()
 end
