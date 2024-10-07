@@ -302,6 +302,9 @@ function WarpDeplete:UpdateForces(forceCount)
       end
     end
 
+    -- avoid nulls if OnScenarioCriteriaUpdate runs first
+    if not currentCount or not totalCount then return end
+
     -- We only want OnScenarioCriteriaUpdate or fromScenarioPOI to run this since
     -- OnCombatLogEvent doesn't get a proper currentCount value.
     -- The count should always restore/fix itself here if it happens to be off from the
@@ -311,12 +314,12 @@ function WarpDeplete:UpdateForces(forceCount)
     end
 
     -- Sometimes there will be a weird interaction that occurs when two mobs worth force
-    -- die at exact same time tick. The execution order of OnScenarioPOIUpdate, 
+    -- die at exact same time tick. The execution order of OnScenarioPOIUpdate,
     -- OnScenarioCriteriaUpdate, and OnCombatLogEvent make them so they run twice before running
     -- the next one.
     -- E.x OnScenarioPOIUpdate -> OnScenarioPOIUpdate -> OnCombatLogEvent -> OnCombatLogEvent, etc.
     -- This check here, is to try keep count accurate.
-    if currentCount == self.forcesState.currentCount and 
+    if currentCount == self.forcesState.currentCount and
     not self.forcesState.fromScenarioCriteria and not self.forcesState.fromScenarioPOI then
       self:SetForcesCurrent((self.forcesState.currentCount + forceCount))
     end
