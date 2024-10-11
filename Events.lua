@@ -636,6 +636,9 @@ end
 
 function WarpDeplete:OnScenarioCriteriaUpdate(ev)
   self:PrintDebugEvent(ev)
+  if self.forcesState.fromScenarioPOI then
+    self:ResetUpdateForcesTriggers()
+  end
   self.forcesState.fromScenarioCriteria = true
   self:UpdateForces(0)
   self:UpdateObjectives()
@@ -694,6 +697,9 @@ function WarpDeplete:OnCombatLogEvent(ev)
     local npcID = select(6, strsplit("-", guid))
     local guidForceCount = MDT:GetEnemyForces(tonumber(npcID))
     self:PrintDebug("Mob died worth: " .. guidForceCount)
+    if self.forcesState.fromScenarioPOI then
+      self:ResetUpdateForcesTriggers()
+    end
     self.forcesState.fromCombatLog = true
     self:UpdateForces(guidForceCount)
   end
