@@ -230,13 +230,13 @@ end
 
 function WarpDeplete:ShowExternals()
   if KT ~= nil then
-    KT.frame:Show()
+    KalielsTracker:Toggle(true)
   end
 end
 
 function WarpDeplete:HideExternals()
   if KT ~= nil then
-    KT.frame:Hide()
+    KalielsTracker:Toggle(false)
   end
 end
 
